@@ -100,7 +100,7 @@ class AudioCache {
   ///
   /// isNotification and stayAwake are not implemented on macOS
   Future<AudioPlayer> play(String fileName,
-      {double volume = 1.0,
+      {List<double> volume = const <double>[1.0],
       bool isNotification,
       PlayerMode mode = PlayerMode.MEDIA_PLAYER,
       bool stayAwake}) async {
@@ -121,7 +121,7 @@ class AudioCache {
   ///
   /// isNotification and stayAwake are not implemented on macOS.
   Future<AudioPlayer> loop(String fileName,
-      {double volume = 1.0,
+      {List<double> volume = const <double>[1.0],
       bool isNotification,
       PlayerMode mode = PlayerMode.MEDIA_PLAYER,
       bool stayAwake}) async {

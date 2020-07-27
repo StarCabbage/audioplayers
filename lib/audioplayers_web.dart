@@ -1,14 +1,27 @@
 import 'dart:async';
 import 'dart:html';
+import 'dart:js';
+import 'dart:js_util';
 
 import 'package:audioplayers/audioplayers.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
+class StereoPanner {
+  static final audioCtx = new JsObject(context['AudioContext']);
+}
+
 class WrappedPlayer {
+  final MethodChannel methodChannel;
+  final String playerId;
+  var panNode;
+  var source;
+
+  WrappedPlayer(this.methodChannel, this.playerId);
+
   double pausedAt;
-  double currentVolume = 1.0;
+  List<double> currentVolume = <double>[1.0];
   ReleaseMode currentReleaseMode = ReleaseMode.RELEASE;
   String currentUrl;
   bool isPlaying = false;
@@ -25,9 +38,11 @@ class WrappedPlayer {
     }
   }
 
-  void setVolume(double volume) {
+  void setVolume(List<double> volume) {
     currentVolume = volume;
-    player?.volume = volume;
+    if (volume[0] >= 0) player?.volume = volume[0];
+    if (volume.length == 3 && StereoPanner.audioCtx != null)
+      panNode["pan"]["value"] = volume[1] * -1 + volume[2];
   }
 
   void recreateNode() {
@@ -36,7 +51,17 @@ class WrappedPlayer {
     }
     player = AudioElement(currentUrl);
     player.loop = shouldLoop();
-    player.volume = currentVolume;
+    player.volume = currentVolume[0];
+    player.crossOrigin = "anonymous";
+    if (StereoPanner.audioCtx != null) {
+      source = StereoPanner.audioCtx
+          .callMethod("createMediaElementSource", [player]);
+      panNode =
+          StereoPanner.audioCtx.callMethod("createStereoPanner", [player]);
+      source.callMethod("connect", [panNode]);
+      panNode.callMethod("connect", [StereoPanner.audioCtx["destination"]]);
+    }
+    onCurrentPosition();
   }
 
   bool shouldLoop() => currentReleaseMode == ReleaseMode.LOOP;
@@ -49,7 +74,22 @@ class WrappedPlayer {
   void release() {
     _cancel();
     player = null;
+    source = null;
+    panNode = null;
   }
+
+  onCurrentPosition() {
+    if (_onCurrentPosition != null) _onCurrentPosition.cancel();
+    _onCurrentPosition = Timer.periodic(Duration(milliseconds: 100), (Timer) {
+      if (player.ended) _onCurrentPosition.cancel();
+      methodChannel.invokeMethod('audio.onCurrentPosition', {
+        'playerId': playerId,
+        'value': (player?.currentTime * 1000).round()
+      });
+    });
+  }
+
+  Timer _onCurrentPosition;
 
   void start(double position) {
     isPlaying = true;
@@ -61,6 +101,7 @@ class WrappedPlayer {
     }
     player.play();
     player.currentTime = position;
+    onCurrentPosition();
   }
 
   void resume() {
@@ -69,7 +110,9 @@ class WrappedPlayer {
 
   void pause() {
     pausedAt = player.currentTime;
-    _cancel();
+    player?.pause();
+    _onCurrentPosition?.cancel();
+    //_cancel();
   }
 
   void stop() {
@@ -79,6 +122,7 @@ class WrappedPlayer {
 
   void _cancel() {
     isPlaying = false;
+    _onCurrentPosition?.cancel();
     player?.pause();
     if (currentReleaseMode == ReleaseMode.RELEASE) {
       player = null;
@@ -89,6 +133,9 @@ class WrappedPlayer {
 class AudioplayersPlugin {
   // players by playerId
   Map<String, WrappedPlayer> players = {};
+  final MethodChannel methodChannel;
+
+  AudioplayersPlugin(this.methodChannel);
 
   static void registerWith(Registrar registrar) {
     final MethodChannel channel = MethodChannel(
@@ -97,12 +144,13 @@ class AudioplayersPlugin {
       registrar.messenger,
     );
 
-    final AudioplayersPlugin instance = AudioplayersPlugin();
+    final AudioplayersPlugin instance = AudioplayersPlugin(channel);
     channel.setMethodCallHandler(instance.handleMethodCall);
   }
 
   WrappedPlayer getOrCreatePlayer(String playerId) {
-    return players.putIfAbsent(playerId, () => WrappedPlayer());
+    return players.putIfAbsent(
+        playerId, () => WrappedPlayer(methodChannel, playerId));
   }
 
   Future<WrappedPlayer> setUrl(String playerId, String url) async {
@@ -136,7 +184,9 @@ class AudioplayersPlugin {
 
           // TODO(luan) think about isLocal (is it needed or not)
 
-          double volume = call.arguments['volume'] ?? 1.0;
+          List<double> volume =
+              (call.arguments['volume'] as List).cast<double>() ??
+                  <double>[1.0];
           final double position = call.arguments['position'] ?? 0;
           // web does not care for the `stayAwake` argument
 
@@ -163,7 +213,9 @@ class AudioplayersPlugin {
         }
       case 'setVolume':
         {
-          double volume = call.arguments['volume'] ?? 1.0;
+          List<double> volume =
+              (call.arguments['volume'] as List).cast<double>() ??
+                  <double>[1.0];
           getOrCreatePlayer(playerId).setVolume(volume);
           return 1;
         }

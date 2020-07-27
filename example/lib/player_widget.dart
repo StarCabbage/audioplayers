@@ -82,7 +82,7 @@ class _PlayerWidgetState extends State<PlayerWidget> {
             ),
             IconButton(
               key: Key('pause_button'),
-              onPressed: _isPlaying ? () => _pause() : null,
+              onPressed: _isPlaying ? () => _pause() : ()=>_audioPlayer?.resume(),
               iconSize: 64.0,
               icon: Icon(Icons.pause),
               color: Colors.cyan,
@@ -208,7 +208,7 @@ class _PlayerWidgetState extends State<PlayerWidget> {
             _position.inMilliseconds < _duration.inMilliseconds)
         ? _position
         : null;
-    final result = await _audioPlayer.play(url, position: playPosition);
+    final result = await _audioPlayer.play(url, position: playPosition,volume: <double>[1.0,1.0]);
     if (result == 1) setState(() => _playerState = PlayerState.playing);
 
     // default playback rate is 1.0

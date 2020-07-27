@@ -13,7 +13,8 @@ import 'player_widget.dart';
 
 typedef void OnError(Exception exception);
 
-const kUrl1 = 'https://luan.xyz/files/audio/ambient_c_motion.mp3';
+const kUrl1 =
+    'https://cs9-9v4.vkuseraudio.net/p2/a55992122dfb22.mp3?extra=bAmhsbs3vJMy9evufXTgZc3_dulp0D1W0jAdX1WR7N4pNkVz1pnS7Rtz0PIRU8A26xooFTDXoHu-0-EE38m59YUZwGcTRxZlfWz2mynwuUxzz_Gw4yxnotLLu6wxu0XX6miWlFGvG8W2YKUmk043xSPe&long_chunk=1';
 const kUrl2 = 'https://luan.xyz/files/audio/nasa_on_a_mission.mp3';
 const kUrl3 = 'http://bbcmedia.ic.llnwd.net/stream/bbcmedia_radio1xtra_mf_p';
 
@@ -273,16 +274,20 @@ class _AdvancedState extends State<Advanced> {
             Row(children: [
               _Btn(
                   txt: '0.0',
-                  onPressed: () => widget.advancedPlayer.setVolume(0.0)),
+                  onPressed: () =>
+                      widget.advancedPlayer.setVolume(<double>[0.0])),
               _Btn(
                   txt: '0.5',
-                  onPressed: () => widget.advancedPlayer.setVolume(0.5)),
+                  onPressed: () =>
+                      widget.advancedPlayer.setVolume(<double>[0.5])),
               _Btn(
                   txt: '1.0',
-                  onPressed: () => widget.advancedPlayer.setVolume(1.0)),
+                  onPressed: () =>
+                      widget.advancedPlayer.setVolume(<double>[1, 1.0, 0])),
               _Btn(
                   txt: '2.0',
-                  onPressed: () => widget.advancedPlayer.setVolume(2.0)),
+                  onPressed: () =>
+                      widget.advancedPlayer.setVolume(<double>[1, 0.0, 1])),
             ], mainAxisAlignment: MainAxisAlignment.spaceEvenly),
           ]),
           Column(children: [

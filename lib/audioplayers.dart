@@ -366,14 +366,14 @@ class AudioPlayer {
   Future<int> play(
     String url, {
     bool isLocal,
-    double volume = 1.0,
+    List<double> volume = const <double>[1.0],
     // position must be null by default to be compatible with radio streams
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
     isLocal ??= isLocalUrl(url);
-    volume ??= 1.0;
+    volume ??= <double>[1.0];
     respectSilence ??= false;
     stayAwake ??= false;
 
@@ -457,7 +457,7 @@ class AudioPlayer {
   ///
   /// 0 is mute and 1 is the max volume. The values between 0 and 1 are linearly
   /// interpolated.
-  Future<int> setVolume(double volume) {
+  Future<int> setVolume(List<double> volume) {
     return _invokeMethod('setVolume', {'volume': volume});
   }
 
@@ -548,7 +548,7 @@ class AudioPlayer {
     final playerId = callArgs['playerId'] as String;
     final AudioPlayer player = players[playerId];
 
-    if (!kReleaseMode && Platform.isAndroid && player == null) {
+    if (!kReleaseMode && player == null) {
       final oldPlayer = AudioPlayer(playerId: playerId);
       await oldPlayer.release();
       oldPlayer.dispose();
