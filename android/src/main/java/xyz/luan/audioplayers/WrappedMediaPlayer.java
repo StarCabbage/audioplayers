@@ -14,7 +14,8 @@ public class WrappedMediaPlayer extends Player implements MediaPlayer.OnPrepared
     private String playerId;
 
     private String url;
-    private double volume = 1.0;
+    private double volumeLeft = 1.0;
+    private double volumeRight = 1.0;
     private float rate = 1.0f;
     private boolean respectSilence;
     private boolean stayAwake;
@@ -52,18 +53,23 @@ public class WrappedMediaPlayer extends Player implements MediaPlayer.OnPrepared
             }
 
             this.setSource(url);
-            this.player.setVolume((float) volume, (float) volume);
+            this.player.setVolume((float) volumeLeft, (float) volumeRight);
             this.player.setLooping(this.releaseMode == ReleaseMode.LOOP);
             this.player.prepareAsync();
         }
     }
 
     @Override
-    void setVolume(double volume) {
-        if (this.volume != volume) {
-            this.volume = volume;
+    void setVolumeLeft(double volumeLeft) {
+        setVolume(volumeLeft, volumeLeft);
+    }
+    @Override
+    void setVolume(double volumeLeft,double volumeRight) {
+        if (this.volumeLeft != volumeLeft ||this.volumeRight != volumeRight ) {
+            this.volumeLeft = volumeLeft;
+            this.volumeRight = volumeRight;
             if (!this.released) {
-                this.player.setVolume((float) volume, (float) volume);
+                this.player.setVolume((float) this.volumeLeft, (float) this.volumeRight);
             }
         }
     }
@@ -310,7 +316,7 @@ public class WrappedMediaPlayer extends Player implements MediaPlayer.OnPrepared
         player.setOnSeekCompleteListener(this);
         player.setOnErrorListener(this);
         setAttributes(player, context);
-        player.setVolume((float) volume, (float) volume);
+        player.setVolume((float) volumeLeft, (float) volumeRight);
         player.setLooping(this.releaseMode == ReleaseMode.LOOP);
         return player;
     }

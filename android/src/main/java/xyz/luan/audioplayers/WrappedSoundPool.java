@@ -4,7 +4,6 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Build;
-import android.os.PowerManager;
 import android.content.Context;
 import android.util.Log;
 
@@ -26,6 +25,7 @@ import static java.io.File.createTempFile;
 public class WrappedSoundPool extends Player {
 
     private static SoundPool soundPool = createSoundPool();
+
     static {
         soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
@@ -50,11 +50,13 @@ public class WrappedSoundPool extends Player {
         });
     }
 
-    /** For the onLoadComplete listener, track which sound id is associated with which player. An entry only exists until
+    /**
+     * For the onLoadComplete listener, track which sound id is associated with which player. An entry only exists until
      * it has been loaded.
      */
     private static Map<Integer, WrappedSoundPool> soundIdToPlayer = Collections.synchronizedMap(new HashMap<Integer, WrappedSoundPool>());
-    /** This is to keep track of the players which share the same sound id, referenced by url. When a player release()s, it
+    /**
+     * This is to keep track of the players which share the same sound id, referenced by url. When a player release()s, it
      * is removed from the associated player list. The last player to be removed actually unloads() the sound id and then
      * the url is removed from this map.
      */
@@ -67,7 +69,10 @@ public class WrappedSoundPool extends Player {
 
     private String url;
 
-    private float volume = 1.0f;
+    private float volumeLeft = 1.0f;
+
+    private float volumeRight = 1.0f;
+
 
     private float rate = 1.0f;
 
@@ -180,12 +185,20 @@ public class WrappedSoundPool extends Player {
     }
 
     @Override
-    void setVolume(double volume) {
-        this.volume = (float) volume;
+    void setVolume(double volumeLeft, double volumeRight) {
+        if(this.volumeLeft != volumeLeft || this.volumeRight != volumeRight)
+        this.volumeLeft = (float) volumeLeft;
+        this.volumeRight= (float) volumeRight;
         if (this.playing) {
-            soundPool.setVolume(this.streamId, this.volume, this.volume);
+            soundPool.setVolume(this.streamId, this.volumeLeft, this.volumeRight);
         }
     }
+
+    @Override
+    void setVolumeLeft(double volumeLeft) {
+        setVolume(volumeLeft, volumeLeft);
+    }
+
 
     @Override
     int setRate(double rate) {
@@ -261,8 +274,8 @@ public class WrappedSoundPool extends Player {
         } else {
             this.streamId = soundPool.play(
                     soundId,
-                    this.volume,
-                    this.volume,
+                    this.volumeLeft,
+                    this.volumeLeft,
                     0,
                     this.looping ? -1 : 0,
                     1.0f);

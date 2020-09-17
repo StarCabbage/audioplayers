@@ -6,6 +6,7 @@ import android.os.Handler;
 import androidx.annotation.NonNull;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -71,13 +72,17 @@ public class AudioplayersPlugin implements MethodCallHandler, FlutterPlugin {
         switch (call.method) {
             case "play": {
                 final String url = call.argument("url");
-                final double volume = call.argument("volume");
+                final ArrayList<Double> volume = call.argument("volume");
                 final Integer position = call.argument("position");
                 final boolean respectSilence = call.argument("respectSilence");
                 final boolean isLocal = call.argument("isLocal");
                 final boolean stayAwake = call.argument("stayAwake");
                 player.configAttributes(respectSilence, stayAwake, context.getApplicationContext());
-                player.setVolume(volume);
+                player.setVolumeLeft(volume.get(0));
+                if(volume.size() == 3) {
+                    double percent = volume.get(0);
+                    player.setVolume(volume.get(1)*percent, volume.get(2)*percent);
+                }
                 player.setUrl(url, isLocal, context.getApplicationContext());
                 if (position != null && !mode.equals("PlayerMode.LOW_LATENCY")) {
                     player.seek(position);
@@ -107,8 +112,12 @@ public class AudioplayersPlugin implements MethodCallHandler, FlutterPlugin {
                 break;
             }
             case "setVolume": {
-                final double volume = call.argument("volume");
-                player.setVolume(volume);
+                final ArrayList<Double> volume = call.argument("volume");
+                player.setVolumeLeft(volume.get(0));
+                if(volume.size() == 3) {
+                    double percent = volume.get(0);
+                    player.setVolume(volume.get(1)*percent, volume.get(2)*percent);
+                }
                 break;
             }
             case "setUrl": {
